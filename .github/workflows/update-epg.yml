@@ -30,12 +30,14 @@ jobs:
 
       - name: Grab the guide for your channels
         working-directory: epg-tool
+        env:
+          NODE_OPTIONS: --max-old-space-size=6144
         run: |
           npm run grab -- \
             --channels=../custom.channels.xml \
             --output=../guide.xml \
-            --days=3 \
-            --maxConnections=10 \
+            --days=2 \
+            --maxConnections=5 \
             --gzip
 
       - name: Commit and push the updated guide
