@@ -1,0 +1,47 @@
+name: Update EPG
+
+on:
+  schedule:
+    # Runs every 12 hours (adjust as you like: cron uses UTC)
+    - cron: '0 */12 * * *'
+  workflow_dispatch: {}   # lets you also trigger it manually from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  update-epg:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout your repo
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Clone the iptv-org EPG grabber
+        run: git clone --depth 1 https://github.com/iptv-org/epg.git epg-tool
+
+      - name: Install grabber dependencies
+        working-directory: epg-tool
+        run: npm ci
+
+      - name: Grab the guide for your channels
+        working-directory: epg-tool
+        run: |
+          npm run grab -- \
+            --channels=../custom.channels.xml \
+            --output=../guide.xml \
+            --days=3 \
+            --maxConnections=10 \
+            --gzip
+
+      - name: Commit and push the updated guide
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add guide.xml.gz
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "Auto-update EPG guide"
+          git push
